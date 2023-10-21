@@ -28,37 +28,36 @@ async function openKv(path: string) {
 
 function parseEnv(kv: KvDatabase, key: string) {
   const value = kv.get(key);
+  if (value == null) {
+    throw new Error(`Data not found: ${key}`);
+  }
   const result: { local: Record<string, string>; env: Record<string, string> } =
     {
       local: {},
       env: {},
     };
-  try {
-    const parsed = value && yaml.parse(value);
-    if (Array.isArray(parsed.extends)) {
-      parsed.extends.forEach((dep: string) => {
-        const { local, env } = parseEnv(kv, dep);
-        result.local = {
-          ...env,
-          ...result.local,
-          ...local,
-        };
-      });
-    }
-    result.local = {
-      ...result.local,
-      ...parsed.local,
-    };
-    if (parsed.env) {
-      Object.entries(parsed.env).forEach(([key, value]) => {
-        result.env[key] = `${value}`.replace(
-          /\$(?:(\w+)|\{(\w+)\})/g,
-          (_, g1, g2) => result.local[g1 || g2] || "",
-        );
-      });
-    }
-  } catch {
-    // ignore
+  const parsed = value && yaml.parse(value);
+  if (Array.isArray(parsed.extends)) {
+    parsed.extends.forEach((dep: string) => {
+      const { local, env } = parseEnv(kv, dep);
+      result.local = {
+        ...env,
+        ...result.local,
+        ...local,
+      };
+    });
+  }
+  result.local = {
+    ...result.local,
+    ...parsed.local,
+  };
+  if (parsed.env) {
+    Object.entries(parsed.env).forEach(([key, value]) => {
+      result.env[key] = `${value}`.replace(
+        /\$(?:(\w+)|\{(\w+)\})/g,
+        (_, g1, g2) => result.local[g1 || g2] || "",
+      );
+    });
   }
   return result;
 }
