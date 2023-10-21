@@ -1,0 +1,3 @@
+#!/bin/sh
+
+deno run -A $(dirname $0)/../denv.ts "$@"
