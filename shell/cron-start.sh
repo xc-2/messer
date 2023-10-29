@@ -23,20 +23,20 @@
 #    JOB_ROOT=/path/to/jobs
 #    JOB_CWD=/path/to/jobs
 #    JOB_SH=/path/to/messer/shell/cron-start.sh
-#    JOB_ON_ERROR="curl https://ntfy.sh/alarm --data-binary"
+#    JOB_ON_ERROR="curl https://ntfy.sh/alarm -d"
 #
 #    * * * * * JOB_NAME=name JOB_CWD=/path/to/cwd $JOB_SH my_command args
 #    ```
 
 JOB_ROOT=${JOB_ROOT:-$(pwd)}
 JOB_ENV=${JOB_ENV:-$JOB_ROOT/.env}
+JOB_HOST=${JOB_HOST:-$(hostname)}
 
 source $JOB_ENV
 
 JOB_CWD=${JOB_CWD:-$JOB_ROOT}
 JOB_NAME=${JOB_NAME:-default}
 JOB_TIMEOUT=${JOB_TIMEOUT:-30}
-JOB_AWK=${JOB_AWK:-awk}
 
 cd $JOB_CWD
 status=$({
@@ -52,7 +52,11 @@ status=$({
 } 4>&1)
 
 if [ "$status" != "0" ] && [ -n "$JOB_ON_ERROR" ]; then
-  $JOB_ON_ERROR "Job [$JOB_NAME] failed: code=$status" || true
+  msg="Job failed: name=$JOB_NAME code=$status"
+  if [ -n "$JOB_HOST" ]; then
+    msg="[$JOB_HOST] $msg"
+  fi
+  $JOB_ON_ERROR "$msg" || true
 fi
 
 exit $status
