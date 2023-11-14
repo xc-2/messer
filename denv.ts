@@ -119,7 +119,6 @@ cli.command("cat <key>", "Show the value of a key")
     const kv = await openKv(options.path);
     const value = kv.get(key) || "";
     console.log(value);
-    parseEnv(kv, key);
   });
 
 cli.command("del <key>", "Delete a key")
@@ -132,6 +131,12 @@ cli.command("keys", "List all keys")
   .action(async (options: GlobalOptions) => {
     const kv = await openKv(options.path);
     console.log(kv.keys().join("\n"));
+  });
+
+cli.command("rename <key> <name>", "Rename key to a new name")
+  .action(async (key: string, value: string, options: GlobalOptions) => {
+    const kv = await openKv(options.path);
+    kv.rename(key, value);
   });
 
 cli.command("edit <key>", "Edit the value of a key with $EDITOR")
