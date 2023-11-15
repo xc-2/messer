@@ -28,11 +28,13 @@
 #    * * * * * JOB_NAME=name JOB_CWD=/path/to/cwd $JOB_SH my_command args
 #    ```
 
+set -e
+
 JOB_ROOT=${JOB_ROOT:-$(pwd)}
 JOB_ENV=${JOB_ENV:-$JOB_ROOT/.env}
 JOB_HOST=${JOB_HOST:-$(hostname)}
 
-. $JOB_ENV
+[ -f "$JOB_ENV" ] && . $JOB_ENV
 
 JOB_CWD=${JOB_CWD:-$JOB_ROOT}
 JOB_NAME=${JOB_NAME:-default}
@@ -56,12 +58,17 @@ status=$({
   } 3>&1 | logger -p 2 -t $JOB_NAME
 } 4>&1)
 
-if [ "$status" != "0" ] && [ -n "$JOB_ON_ERROR" ]; then
-  msg="Job failed: name=$JOB_NAME code=$status"
-  if [ -n "$JOB_HOST" ]; then
-    msg="[$JOB_HOST] $msg"
-  fi
-  $JOB_ON_ERROR "$msg" || true
+msg="\
+host=$JOB_HOST
+name=$JOB_NAME
+status=$status
+time=$(date -Is)"
+
+if [ "$status" = "0" ]; then
+  [ -n "$JOB_ON_SUCCESS" ] && $JOB_ON_SUCCESS "$msg" || true
+else
+  [ -n "$JOB_ON_ERROR" ] && $JOB_ON_ERROR "$msg" || true
 fi
+[ -n "$JOB_ON_FINISH" ] && $JOB_ON_FINISH "$msg" || true
 
 exit $status
