@@ -1,5 +1,21 @@
 #!/usr/bin/env -S deno run -A
 
+/*
+ * Usage:
+ *
+ * ```bash
+ * # Run commands
+ * $ denv run -e key1 -e key2 -- command arg1 arg2
+ * $ DENV_KEYS=key1,key2 denv run -- command arg1 arg2
+ *
+ * # Show env
+ * $ denv run -e key1 -e key2 --export
+ *
+ * # Import env in a script
+ * $ . <(denv run -e key1 -e key2 --export)
+ * ```
+ */
+
 import { cac } from "https://esm.sh/cac@6.7.14";
 import yaml from "https://esm.sh/yaml@2.3.3";
 import {
@@ -86,14 +102,15 @@ cli.on("command:*", showHelpAndThrow);
 
 cli.command("run", "Run command with env")
   .option("-e, --env <key>", "Keys to load enviroment")
+  .option("--export", "Print enviroment variables to stdout")
   .action(
     async (
-      options: GlobalOptions & { env: string | string[]; "--": string[] },
+      options: GlobalOptions & {
+        env: string | string[];
+        export: boolean;
+        "--": string[];
+      },
     ) => {
-      const [command, ...args] = options["--"];
-      if (!command) {
-        return showHelpAndThrow();
-      }
       let envKeys: string[];
       if (options.env) {
         envKeys = typeof options.env === "string" ? [options.env] : options.env;
@@ -101,15 +118,20 @@ cli.command("run", "Run command with env")
         envKeys = (Deno.env.get("DENV_KEYS") || "").split(",").filter(Boolean);
       }
       const kv = await openKv(options.path);
-      const env = {
-        ...Deno.env.toObject(),
-        ...parseEnvs(kv, envKeys),
-      };
+      const env = parseEnvs(kv, envKeys);
+      const [command, ...args] = options["--"];
       if (command) {
         await runCommand(command, {
           args,
-          env,
+          env: {
+            ...Deno.env.toObject(),
+            ...env,
+          },
         });
+      } else if (options.export) {
+        console.log(
+          Object.entries(env).map(([k, v]) => `${k}=${v}`).join("\n"),
+        );
       }
     },
   );
