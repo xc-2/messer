@@ -10,11 +10,11 @@
 #
 # 2. Start your scripts immediately:
 #
-#    $ /usr/bin/bash cron-start.sh bash my-other-script-with-env-restored.sh
+#    $ /usr/bin/bash run-job.sh bash my-other-script-with-env-restored.sh
 #
 #    Or run your script in specified directory and write logs to log-file-name.log:
 #
-#    $ JOB_CWD=/path/to/cwd JOB_NAME=log-file-name /usr/bin/bash cron-start.sh my-script.sh
+#    $ JOB_CWD=/path/to/cwd JOB_NAME=log-file-name /usr/bin/bash run-job.sh my-script.sh
 #
 # 3. Use with crontab
 #
@@ -22,7 +22,7 @@
 #    PATH=/usr/bin:/bin
 #    JOB_ROOT=/path/to/jobs
 #    JOB_CWD=/path/to/jobs
-#    JOB_SH=/path/to/messer/shell/cron-start.sh
+#    JOB_SH=/path/to/messer/shell/run-job.sh
 #    JOB_ON_ERROR="curl https://ntfy.sh/alarm -d"
 #
 #    * * * * * JOB_NAME=name JOB_CWD=/path/to/cwd $JOB_SH my_command args
@@ -32,11 +32,16 @@ JOB_ROOT=${JOB_ROOT:-$(pwd)}
 JOB_ENV=${JOB_ENV:-$JOB_ROOT/.env}
 JOB_HOST=${JOB_HOST:-$(hostname)}
 
-source $JOB_ENV
+. $JOB_ENV
 
 JOB_CWD=${JOB_CWD:-$JOB_ROOT}
 JOB_NAME=${JOB_NAME:-default}
 JOB_TIMEOUT=${JOB_TIMEOUT:-30}
+
+if [ -n "$JOB_DENV_KEYS" ]; then
+  DENV=${DENV:-$(dirname $0)/../denv.ts}
+  export $(DENV_KEYS=$JOB_DENV_KEYS $DENV run --export | xargs)
+fi
 
 cd $JOB_CWD
 status=$({
