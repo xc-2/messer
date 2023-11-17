@@ -2,9 +2,15 @@
 #
 # This is useful to run a script from crontab with all environment variables restored.
 #
+# Features:
+# - Load predefined environment variables
+# - Integrate denv to load sensitive environment automatically
+# - Pipe stdout and stderr to logger
+# - Support hooks after each job
+#
 # Usage:
 #
-# 1. Export and save your environment variables for subsequent use:
+# 1. Export and save your environment variables for future use:
 #
 #    $ export -p > .env
 #
@@ -31,17 +37,17 @@
 set -e
 
 JOB_ROOT=${JOB_ROOT:-$(pwd)}
-JOB_ENV=${JOB_ENV:-$JOB_ROOT/.env}
-JOB_HOST=${JOB_HOST:-$(hostname)}
 
+JOB_ENV=${JOB_ENV:-$JOB_ROOT/.env}
 [ -f "$JOB_ENV" ] && . $JOB_ENV
 
+JOB_HOST=${JOB_HOST:-$(hostname)}
 JOB_CWD=${JOB_CWD:-$JOB_ROOT}
 JOB_NAME=${JOB_NAME:-default}
 JOB_TIMEOUT=${JOB_TIMEOUT:-30}
 
 if [ -n "$JOB_DENV_KEYS" ]; then
-  DENV=${DENV:-$(dirname $0)/../denv.ts}
+  DENV=${DENV:-$(dirname $0)/../denv/cli.ts}
   export $(DENV_KEYS=$JOB_DENV_KEYS $DENV run --export | xargs)
 fi
 

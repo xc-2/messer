@@ -17,14 +17,8 @@
  */
 
 import { cac } from "https://esm.sh/cac@6.7.14";
-import yaml from "https://esm.sh/yaml@2.3.3";
-import {
-  dirname,
-  ensureEnv,
-  join,
-  KvDatabase,
-  runCommand,
-} from "./common/deps.ts";
+import { getEnvs, openKv } from "./index.ts";
+import { ensureEnv, join, runCommand } from "../common/deps.ts";
 
 interface GlobalOptions {
   path: string;
@@ -33,61 +27,6 @@ interface GlobalOptions {
 function showHelpAndThrow() {
   cli.outputHelp();
   Deno.exit(1);
-}
-
-async function openKv(path: string) {
-  const dir = dirname(path);
-  await Deno.mkdir(dir, { recursive: true });
-  const kv = new KvDatabase(path);
-  return kv;
-}
-
-function parseEnv(kv: KvDatabase, key: string) {
-  const value = kv.get(key);
-  if (value == null) {
-    throw new Error(`Data not found: ${key}`);
-  }
-  const result: { local: Record<string, string>; env: Record<string, string> } =
-    {
-      local: {},
-      env: {},
-    };
-  const parsed = value && yaml.parse(value);
-  if (Array.isArray(parsed.extends)) {
-    parsed.extends.forEach((dep: string) => {
-      const { local, env } = parseEnv(kv, dep);
-      result.local = {
-        ...env,
-        ...result.local,
-        ...local,
-      };
-    });
-  }
-  result.local = {
-    ...result.local,
-    ...parsed.local,
-  };
-  if (parsed.env) {
-    Object.entries(parsed.env).forEach(([key, value]) => {
-      result.env[key] = `${value}`.replace(
-        /\$(?:(\w+)|\{(\w+)\})/g,
-        (_, g1, g2) => result.local[g1 || g2] || "",
-      );
-    });
-  }
-  return result;
-}
-
-function parseEnvs(kv: KvDatabase, keys: string[]) {
-  let env: Record<string, string> = {};
-  for (const key of keys) {
-    const result = parseEnv(kv, key);
-    env = {
-      ...env,
-      ...result.env,
-    };
-  }
-  return env;
 }
 
 const cli = cac("denv");
@@ -117,8 +56,9 @@ cli.command("run", "Run command with env")
       } else {
         envKeys = (Deno.env.get("DENV_KEYS") || "").split(",").filter(Boolean);
       }
-      const kv = await openKv(options.path);
-      const env = parseEnvs(kv, envKeys);
+      const env = await getEnvs(envKeys, {
+        path: options.path,
+      });
       const [command, ...args] = options["--"];
       if (command) {
         await runCommand(command, {
