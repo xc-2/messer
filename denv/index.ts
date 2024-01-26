@@ -1,7 +1,9 @@
-import yaml from "https://esm.sh/yaml@2.3.3";
-import { dirname, KvDatabase } from "../common/deps.ts";
+import { KvDatabase } from 'bun-lib/src/storage/kv';
+import { mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import yaml from 'yaml';
 
-const defaultPath = "denv.db";
+const defaultPath = 'denv.db';
 
 export interface DenvOptions {
   path?: string;
@@ -10,7 +12,7 @@ export interface DenvOptions {
 
 export async function openKv(path: string) {
   const dir = dirname(path);
-  await Deno.mkdir(dir, { recursive: true });
+  await mkdir(dir, { recursive: true });
   const kv = new KvDatabase(path);
   return kv;
 }
@@ -44,7 +46,7 @@ export function parseEnv(kv: KvDatabase, key: string) {
     Object.entries(parsed.env).forEach(([key, value]) => {
       result.env[key] = `${value}`.replace(
         /\$(?:(\w+)|\{(\w+)\})/g,
-        (_, g1, g2) => result.local[g1 || g2] || "",
+        (_, g1, g2) => result.local[g1 || g2] || '',
       );
     });
   }

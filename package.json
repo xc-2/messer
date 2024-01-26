@@ -1,0 +1,16 @@
+{
+  "name": "messer",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "bun-lib": "gera2ld/bun-lib",
+    "cac": "^6.7.14",
+    "tempy": "^3.1.0",
+    "yaml": "^2.3.4"
+  }
+}
