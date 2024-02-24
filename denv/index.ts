@@ -36,6 +36,10 @@ export function parseEnv(kv: KvDatabase, key: string) {
         ...result.local,
         ...local,
       };
+      result.env = {
+        ...result.env,
+        ...env,
+      };
     });
   }
   result.local = {
