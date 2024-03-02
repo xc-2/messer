@@ -28,11 +28,6 @@ interface GlobalOptions {
   path: string;
 }
 
-function showHelpAndThrow() {
-  cli.outputHelp();
-  process.exit(1);
-}
-
 const cli = cac('denv');
 cli.option('--path <path>', 'Set path of database', {
   default: join(ensureEnv('HOME'), '.config/denv.db'),
@@ -154,3 +149,8 @@ cli
   });
 
 cli.parse();
+
+function showHelpAndThrow() {
+  cli.outputHelp();
+  process.exit(1);
+}
