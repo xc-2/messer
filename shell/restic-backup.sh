@@ -13,9 +13,7 @@ fi
 echo Backing up from $RESTIC_DATA_ROOT to $RESTIC_REPOSITORY: $RESTIC_DATA_PATH
 cd $RESTIC_DATA_ROOT
 
-added=$($RESTIC backup -qn $RESTIC_OPTS --json $RESTIC_DATA_PATH | jq .data_added)
-
-if [[ "$added" == "0" ]]; then
+if ! $RESTIC backup -qn $RESTIC_OPTS --json $RESTIC_DATA_PATH | jq '.files_new, .files_changed, .dirs_new, .dirs_changed, .data_added' | grep -v '^0$' > /dev/null; then
   echo Repo is up to date: $RESTIC_DATA_ROOT
   exit ${CODE_NO_CHANGE:-0}
 fi
